@@ -25,7 +25,15 @@ AUDIO_VOL_DELTA_UP=$((AUDIO_VOL_DELTA / TIME_UP))
 
 MUSIC_PLAYER=$1  # Passed command line arg via musicPlayerExe.sh
 
-# Make sure music player is running and set default volume if Initial volume is not set to at least 1.
+# This gets the pactl Sink Input id number, using cli arg $1 as the search string
+get_aud_id() {
+    pactl list sink-inputs | awk -v player="$MUSIC_PLAYER" '
+        /Sink Input/ { id = $3 }
+        $0 ~ "application.id = \"" player "\"" { print substr(id, 2) }'
+}
+AUD_ID=$(get_aud_id)
+
+# Makes sure music player is running and set default volume if Initial volume is not set to at least 1.
 if [ $AUDIO_VOL -gt 0 ] && pgrep -x "$MUSIC_PLAYER" >/dev/null; then
     pactl set-sink-input-volume "$AUD_ID" "$AUDIO_VOL"%
 elif ! pgrep -x "$MUSIC_PLAYER" >/dev/null; then
@@ -33,11 +41,6 @@ elif ! pgrep -x "$MUSIC_PLAYER" >/dev/null; then
     exit 0
 fi
 
-# This gets the pactl Sink Input id number, using cli arg $1 as the search string
-AUD_ID=$(pactl list sink-inputs | awk -v player="$MUSIC_PLAYER" '
-        /Sink Input/ { id = $3 }
-        $0 ~ "application.id = \"" player "\"" { print substr(id, 2) }
-    ')
 
 # Bool flag, is volume raised or lowered, default is true so volume can only decrease once from initial AUDIO_VOL
 BOOL_FLAG=0
@@ -53,7 +56,11 @@ while pgrep -x $MUSIC_PLAYER >/dev/null; do
         # Lower music player audio stream by down delta
         for (( i=0; i<$TIME_DOWN; i++ ))
         do
-            pactl set-sink-input-volume $AUD_ID -"$AUDIO_VOL_DELTA_DOWN"%
+            if ! pactl set-sink-input-volume $AUD_ID -"$AUDIO_VOL_DELTA_DOWN"%; then;
+                # If the command fails, refresh AUD_ID and try again.
+                AUD_ID=$(get_aud_id)
+                pactl set-sink-input-volume $AUD_ID -"$AUDIO_VOL_DELTA_DOWN"%
+            fi
             sleep 0.1
         done
         BOOL_FLAG=1
@@ -62,7 +69,11 @@ while pgrep -x $MUSIC_PLAYER >/dev/null; do
         # Raise music player audio stream by up delta
         for (( i=0; i<$TIME_UP; i++ ))
         do
-            pactl set-sink-input-volume $AUD_ID +"$AUDIO_VOL_DELTA_UP"%
+            if ! pactl set-sink-input-volume $AUD_ID +"$AUDIO_VOL_DELTA_UP"% then;
+                # If the command fails, refresh AUD_ID and try again.
+                AUD_ID=$(get_aud_id)
+                pactl set-sink-input-volume $AUD_ID +"$AUDIO_VOL_DELTA_UP"%
+            fi
             sleep 0.1
         done
         BOOL_FLAG=0
