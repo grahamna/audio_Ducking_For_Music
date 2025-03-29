@@ -99,6 +99,7 @@ TIME_UP=10              # Time in 0.1s steps for volume increase
 - The script is designed to work with the Audacious music player, but it can be adapted to work with other players by changing the MUSIC_PLAYER variable in the scripts.
 - The volume adjustments are done gradually in small steps to avoid abrupt changes in volume.
 - The script uses pactl to interact with PulseAudio or PipeWire, so ensure these services are running correctly on your system.
+- This shell script was developed on Arch Linux
 
 ---
 
