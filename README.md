@@ -82,6 +82,12 @@ TIME_UP=10              # Time in 0.1s steps for volume increase
 
 ---
 
+
+https://github.com/user-attachments/assets/9a1d3a04-9942-4ace-ab5e-33df366a4630
+
+
+---
+
 ## Troubleshooting
 
 - **Error: command not found**
