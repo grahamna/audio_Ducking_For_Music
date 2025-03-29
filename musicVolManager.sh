@@ -47,7 +47,7 @@ while pgrep -x $MUSIC_PLAYER >/dev/null; do
     TOTAL_STREAMS=$(pactl list sink-inputs short | wc -l)
     
     # If more than one, we know there's another audio stream other than music player, so:
-    if [ $BOOL_FLAG -eq 0] && [ $TOTAL_STREAMS -gt 1 ]; then
+    if [ $BOOL_FLAG -eq 0 ] && [ $TOTAL_STREAMS -gt 1 ]; then
         # Lower music player audio stream by down delta
         for (( i=0; i<$TIME_DOWN; i++ ))
         do
@@ -56,7 +56,7 @@ while pgrep -x $MUSIC_PLAYER >/dev/null; do
         done
         BOOL_FLAG=1
     
-    elif [ $BOOL_FLAG -eq 1 ] && [ $TOTAL_STREAMS -eq 1 ]; then # Otherwise raise the volume of audio player stream
+    elif [ $BOOL_FLAG -eq 1 ] && [ $TOTAL_STREAMS -lt 2 ]; then # Otherwise raise the volume of audio player stream
         # Raise music player audio stream by up delta
         for (( i=0; i<$TIME_UP; i++ ))
         do
@@ -66,5 +66,5 @@ while pgrep -x $MUSIC_PLAYER >/dev/null; do
         BOOL_FLAG=0
 
     fi
-    sleep 0.5 # Avoid busy waiting 
+    sleep 0.75 # Avoid busy waiting 
 done
