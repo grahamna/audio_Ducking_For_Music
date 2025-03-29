@@ -81,7 +81,7 @@ TIME_UP=10              # Time in 0.1s steps for volume increase
 4. When the music player is the only remaining stream, its volume is restored.
 
 ---
-
+Adding audio streams using settings left/right channel test. As you can see, the volume of the music player (Audacious) goes down while there are more than 1 audio channel, and restores its original volume when that audio channel goes away.
 
 https://github.com/user-attachments/assets/9a1d3a04-9942-4ace-ab5e-33df366a4630
 
