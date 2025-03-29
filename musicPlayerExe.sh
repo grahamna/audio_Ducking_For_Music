@@ -27,12 +27,5 @@ $MUSIC_PLAYER &
 AUD_PID=$!
 
 # Start the monitoring script in the background. Sleep allows for the music player to actually start before volume manager.
-sleep 0.5
-"$PATH_TO_MUSIC_VOL_MANAGER" $MUSIC_PLAYER &
-MONITOR_PID=$!
-
-# Wait for either music player or the monitor script to exit
-wait -n $AUD_PID $MONITOR_PID
-
-# Kill whichever process is still running
-kill $AUD_PID $MONITOR_PID 2>/dev/null || true
+sleep 0.25
+"$PATH_TO_MUSIC_VOL_MANAGER" $MUSIC_PLAYER
