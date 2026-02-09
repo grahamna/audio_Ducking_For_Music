@@ -22,7 +22,7 @@ Make sure you have the following dependencies installed:
 
 2. Edit `musicPlayerExe.sh` to specify your preferred music player:
 
-   MUSIC\_PLAYER can be found by executing pactl list sink-inputs | grep "application.id"  while your music player of choice is running.
+   MUSIC\_PLAYER can be found by executing pactl list sink-inputs | grep "application.icon_name"  while your music player of choice is running.
 
    ```bash
    MUSIC_PLAYER="audacious"
@@ -117,4 +117,4 @@ This script is open-source and available for modification and distribution under
 
 ## Author
 
-Nathan Graham - Contributions are welcome!
+Nathan Graham - Contributions / Suggestions are welcome!
