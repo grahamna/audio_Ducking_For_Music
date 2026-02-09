@@ -25,13 +25,56 @@ AUDIO_VOL_DELTA_UP=$((AUDIO_VOL_DELTA / TIME_UP))
 
 MUSIC_PLAYER=$1  # Passed command line arg via musicPlayerExe.sh
 
-# This gets the pactl Sink Input id number, using cli arg $1 as the search string
+# Check for bad characters in input string against Whitelist
+if [[ ! "$MUSIC_PLAYER" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    echo "Error: Invalid music player name. Exiting."
+    exit 1
+fi
+
+# This gets the pactl Sink Input id number (from object.serial) from it, using cli arg $1 as the search string
 get_aud_id() {
-    pactl list sink-inputs | awk -v player="$MUSIC_PLAYER" '
-        /Sink Input/ { id = $3 }
-        $0 ~ "application.id = \"" player "\"" { print substr(id, 2) }'
+    pactl list sink-inputs | awk -v icon="$MUSIC_PLAYER" '
+    /^Sink Input/ {
+        in_block = 1
+        match_icon = 0
+    }
+
+    in_block && $0 ~ "application.icon_name = \"" icon "\"" {
+        match_icon = 1
+    }
+
+    in_block && match_icon && /object.serial/ {
+        gsub(/[^0-9]/, "", $3)
+        print $3
+        exit
+    }
+
+    /^$/ {
+        in_block = 0
+        match_icon = 0
+    }
+    '
 }
+
+MAX_TRIES=67    # ~20 sec
+TRIES=0
+
 AUD_ID=$(get_aud_id)
+
+# Attempts to capture the music player's AUD_ID as long as the Music Player is running, and not timed out (20 seconds)
+while pgrep -x "$MUSIC_PLAYER" >/dev/null; do
+
+    AUD_ID=$(get_aud_id)
+
+    [[ -n "$AUD_ID" ]] && break
+
+    ((TRIES++))
+    if (( TRIES >= MAX_TRIES )); then
+        echo "Timed out waiting for $MUSIC_PLAYER sink-input"
+        exit 1
+    fi
+    sleep 0.3
+done
 
 # Makes sure music player is running and set default volume if Initial volume is not set to at least 1.
 if [ $AUDIO_VOL -gt 0 ] && pgrep -x "$MUSIC_PLAYER" >/dev/null; then
@@ -40,7 +83,6 @@ elif ! pgrep -x "$MUSIC_PLAYER" >/dev/null; then
     echo "$MUSIC_PLAYER is not running"
     exit 0
 fi
-
 
 # Bool flag, is volume raised or lowered, default is true so volume can only decrease once from initial AUDIO_VOL
 BOOL_FLAG=0
