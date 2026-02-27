@@ -15,7 +15,7 @@ AUDIO_VOL_DELTA=20
 TIME_DOWN=2 # Time it takes for volume to decrease; 1 = 0.1 sec
 TIME_UP=10 # Time it takes for volume to increase; 1 = 0.1 sec
 
-# Probably a good idea if time up and down evenly divides into audio vol delta
+# Probably a good idea if time up and down evenly divides into AUDIO_VOL_DELTA
 
     ## ---End Settings---
 

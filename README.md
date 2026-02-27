@@ -42,6 +42,8 @@ Make sure you have the following dependencies installed:
    /path/to/musicPlayerExe.sh
    ```
 
+    - If you wish to see some diagnostics from the script as it's running, run `musicPlayerExe.sh` directly from the terminal.
+
 ---
 
 ## Script Details
