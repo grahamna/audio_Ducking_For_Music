@@ -1,12 +1,12 @@
 #!/bin/bash
 
-set -eou pipefail
+set -euo pipefail
 
 
     ## ---Normal Settings---
 
 # Lower and raise the volume by 20%, initial volume of music application starts at 60%
-INITIAL_AUDIO_VOL=60  # Set this to x<=0 if you want to skip the initialization of music volume
+AUDIO_VOL=60  # Set this to x<=0 if you want to skip the initialization of music volume
 AUDIO_VOL_DELTA=20
 
 # Probably a good idea to make sure that Audio volume delta < Initial audio volume
@@ -15,13 +15,17 @@ AUDIO_VOL_DELTA=20
 TIME_DOWN=2 # Time it takes for volume to decrease; 1 = 0.1 sec
 TIME_UP=10 # Time it takes for volume to increase; 1 = 0.1 sec
 
-# Probably a good idea if time up and down evenly divides into AUDIO_VOL_DELTA
+# Probably a good idea if time up and down evenly divides into AUDIO_VOL_DELTA, and is Larger than AUDIO_VOL_DELTA
 
     ## ---End Settings---
 
-
 AUDIO_VOL_DELTA_DOWN=$((AUDIO_VOL_DELTA / TIME_DOWN))
 AUDIO_VOL_DELTA_UP=$((AUDIO_VOL_DELTA / TIME_UP))
+
+if (( AUDIO_VOL_DELTA_UP == 0 || AUDIO_VOL_DELTA_DOWN == 0 )); then
+    echo "Error: AUDIO_VOL_DELTA too small relative to TIME_UP/TIME_DOWN"
+    exit 1
+fi
 
 MUSIC_PLAYER=$1  # Passed command line arg via musicPlayerExe.sh
 
@@ -58,8 +62,8 @@ get_aud_id() {
 
 MAX_TRIES=67    # ~20 sec
 TRIES=0
-
-AUD_ID=$(get_aud_id)
+TOTAL_STREAMS=0
+AUD_ID=""
 
 # Attempts to capture the music player's AUD_ID as long as the Music Player is running, and not timed out (20 seconds)
 while pgrep -x "$MUSIC_PLAYER" >/dev/null; do
@@ -77,7 +81,7 @@ while pgrep -x "$MUSIC_PLAYER" >/dev/null; do
 done
 
 # Makes sure music player is running and set default volume if Initial volume is not set to at least 1.
-if [ $AUDIO_VOL -gt 0 ] && pgrep -x "$MUSIC_PLAYER" >/dev/null; then
+if (( AUDIO_VOL > 0 )) && pgrep -x "$MUSIC_PLAYER" >/dev/null; then
     pactl set-sink-input-volume "$AUD_ID" "$AUDIO_VOL"%
 elif ! pgrep -x "$MUSIC_PLAYER" >/dev/null; then
     echo "$MUSIC_PLAYER is not running"
@@ -87,34 +91,32 @@ fi
 # Bool flag, is volume raised or lowered, default is true so volume can only decrease once from initial AUDIO_VOL
 BOOL_FLAG=0
 
-# Main loop: Run while MUSIC_PLAYER is running.
-while pgrep -x $MUSIC_PLAYER >/dev/null; do
+while pgrep -x "$MUSIC_PLAYER" >/dev/null; do
 
-    # Total num of audio streams
     TOTAL_STREAMS=$(pactl list sink-inputs short | wc -l)
     
     # If more than one, we know there's another audio stream other than music player, so:
-    if [ $BOOL_FLAG -eq 0 ] && [ $TOTAL_STREAMS -gt 1 ]; then
+    if ((BOOL_FLAG == 0)) && ((TOTAL_STREAMS > 1)); then
         # Lower music player audio stream by down delta
-        for (( i=0; i<$TIME_DOWN; i++ ))
+        for (( i=0; i<TIME_DOWN; i++ ))
         do
-            if ! pactl set-sink-input-volume $AUD_ID -"$AUDIO_VOL_DELTA_DOWN"%; then;
+            if ! pactl set-sink-input-volume "$AUD_ID" -"$AUDIO_VOL_DELTA_DOWN"%; then
                 # If the command fails, refresh AUD_ID and try again.
                 AUD_ID=$(get_aud_id)
-                pactl set-sink-input-volume $AUD_ID -"$AUDIO_VOL_DELTA_DOWN"%
+                [[ -n "$AUD_ID" ]] && pactl set-sink-input-volume "$AUD_ID" -"$AUDIO_VOL_DELTA_DOWN"%
             fi
             sleep 0.1
         done
         BOOL_FLAG=1
     
-    elif [ $BOOL_FLAG -eq 1 ] && [ $TOTAL_STREAMS -lt 2 ]; then # Otherwise raise the volume of audio player stream
+    elif ((BOOL_FLAG == 1)) && ((TOTAL_STREAMS < 2)); then # Otherwise raise the volume of audio player stream
         # Raise music player audio stream by up delta
-        for (( i=0; i<$TIME_UP; i++ ))
+        for (( i=0; i<TIME_UP; i++ ))
         do
-            if ! pactl set-sink-input-volume $AUD_ID +"$AUDIO_VOL_DELTA_UP"% then;
+            if ! pactl set-sink-input-volume "$AUD_ID" +"$AUDIO_VOL_DELTA_UP"%; then
                 # If the command fails, refresh AUD_ID and try again.
                 AUD_ID=$(get_aud_id)
-                pactl set-sink-input-volume $AUD_ID +"$AUDIO_VOL_DELTA_UP"%
+                [[ -n "$AUD_ID" ]] && pactl set-sink-input-volume "$AUD_ID" +"$AUDIO_VOL_DELTA_UP"%
             fi
             sleep 0.1
         done
